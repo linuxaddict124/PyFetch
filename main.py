@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-PYFETCH_VERSION = "1.1.3" # Changing the version in this line is highly not recommended.
+PYFETCH_VERSION = "1.2.0"
+
 import os
 
 # Load ~/.config/pyfetch/pyfetch.conf
@@ -194,7 +195,8 @@ facts = [
     "Did you know that the official PyFetch website is pyfetch.github.io?",
     "Did you know the most popular distros are based on Ubuntu?",
     "Did you know both MacOS and Ubuntu are based on Unix? I wonder why XNU stands for 'X is Not Unix' then...",
-    "Java is more complicated than Python. Don't believe it? Try to print Hello World in Java."
+    "Java is more complicated than Python. Don't believe it? Try to print Hello World in Java.",
+    "GNOME is a minimalist desktop environment that was made to be a open-source alternative to both CDE and KDE, although KDE became completely open-source after Qt switched to the GPL license."
     ]
 random_fact = random.choice(facts)
 
@@ -290,6 +292,53 @@ def nopluginsbase():
         print("Battery:", get_battery_percentage())
     print(f"CPU: {os.uname().machine}")
     print(f"RAM: {round(psutil.virtual_memory().total / (1024**3), 2)} GB")
+    
+def pyfetchprofile():
+    profile_banner_text = None
+    with open(profile_path) as f:
+        for line in f:
+            if "banner_text" in line:
+                if line.strip().startswith("#"):
+                    profile_banner_text = distro_name
+                else:
+                    profile_banner_text = line.split("=", 1)[1].strip()
+                break
+    if profile_banner_text is None:
+        profile_banner_text = distro_name
+    profile_ascii_banner = pyfiglet.figlet_format(profile_banner_text)
+    if profile_cfg.get('ascii_art', 'true') == 'true':
+        if profile_banner_text == "Manjaro" or banner_text == "Manjaro Linux":
+            print("Autocorrecting to Trashjaro.")
+            print(trashjaro_backup)
+        else:
+            print(profile_ascii_banner)
+    if profile_cfg.get('show_distro', 'true') == 'true':
+        print(f"Distro: {distro_name}")
+    print(f"Hostname: {socket.gethostname()}")
+    print(f"User: {getpass.getuser()}")
+    if profile_cfg.get('show_kernel', 'true') == 'true':
+        print(f"Kernel: {platform.system()} {platform.release()}")
+    if profile_cfg.get('show_de', 'true') == 'true':
+        print(f"Desktop Environment: {de}")
+    if profile_cfg.get('show_packages', 'true') == 'true':
+        if pkg_count is not None:
+            print(f"Packages: {pkg_count}")
+        else:
+            print("Packages: Unknown")
+    if profile_cfg.get('fun_facts', 'true') == 'true':
+        print("Fun Fact:", random_fact)
+    if profile_cfg.get('show_pyfversion', 'true') == 'true':
+        print(f"PyFetch Version:", PYFETCH_VERSION)
+    if profile_cfg.get('show_ip', 'true') == 'true':
+        print(f"Public IP: {get_public_ip()}")
+    if profile_cfg.get('show_shell_version', 'true') == 'true':
+        print("Shell:", get_shell_version())
+    if profile_cfg.get('show_battery', 'true') == 'true':
+        print("Battery:", get_battery_percentage())
+    print(f"CPU: {os.uname().machine}")
+    print(f"RAM: {round(psutil.virtual_memory().total / (1024**3), 2)} GB")
+    if profile_cfg.get('allow_plugins', 'true') == 'true':
+        run_plugins(plugins, cfg, PYFETCH_VERSION)
 
 # Flags Manager
 if cfg.get('enable_flags', 'true') == 'true':
@@ -307,6 +356,11 @@ if cfg.get('enable_flags', 'true') == 'true':
         parser.add_argument("--desktop", action="store_true", help="Show your desktop environment")
         parser.add_argument("--public-ip", action="store_true", help="Show your Public IP")
         parser.add_argument("--kernel", action="store_true", help="Show your Kernel Version")
+        parser.add_argument("--create-profile", metavar="NAME", help="Create a new profile")
+        parser.add_argument("--profile", metavar="NAME", help="Run PyFetch with a personalized profile")
+        parser.add_argument("--edit-profile", metavar="NAME", help="Edit your profile")
+        parser.add_argument("--rm-profile", metavar="NAME", help="Delete a profile")
+        parser.add_argument("--ls-profiles", action="store_true", help="List profiles")
         args = parser.parse_args()
 
         if args.minimal:
@@ -365,6 +419,67 @@ if cfg.get('enable_flags', 'true') == 'true':
         
         if args.kernel:
             print(f"Kernel: {platform.system()} {platform.release()}")
+            exit()
+        
+        if args.create_profile:
+            profile_name = args.create_profile.strip()
+            source = os.path.expanduser("~/.config/pyfetch/profile.conf")
+            dest = os.path.expanduser(f"~/.config/pyfetch/profiles/{profile_name}.ini")
+            if os.path.exists(dest):
+                print(f"Profile '{profile_name}' already exists.")
+                exit(1)
+            if not profile_name:
+                print("Input is required. (Example: pyfetch --create-profile work)")
+                exit(1)
+            else:
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                os.system(f"cp '{source}' '{dest}'")
+                os.system(f"nano '{dest}'")
+                print(f"{profile_name} has been created.")
+                exit(0)
+        
+        if args.profile:
+            profile_name = args.profile.strip()
+            profile_path = os.path.expanduser(f"~/.config/pyfetch/profiles/{profile_name}.ini")
+            if not os.path.exists(profile_path):
+                print(f"Error: {profile_name} not found.")
+                exit(1)
+            if not profile_name:
+                print(f"Input is required. (Example: pyfetch --profile work)")
+                exit(1)
+            profile_cfg = load_conf(profile_path)
+            pyfetchprofile()
+            exit()
+        
+        if args.edit_profile:
+            profile_name = args.edit_profile.strip()
+            path = os.path.expanduser(f"~/.config/pyfetch/profiles/{profile_name}.ini")
+            if not os.path.exists(path):
+                print(f"Error: {profile_name} not found.")
+                exit(1)
+            if not profile_name:
+                print(f"Input is required. (Example: pyfetch --edit-profile work)")
+                exit(1)
+            os.system(f"nano {path}")
+            exit()
+
+        if args.rm_profile:
+            profile_name = args.rm_profile.strip()
+            path = os.path.expanduser(f"~/.config/pyfetch/profiles/{profile_name}.ini")
+            if not os.path.exists(path):
+                print(f"Error: {profile_name} not found.")
+                exit(1)
+            os.remove(path)
+            print("Profile deleted successfully.")
+            exit(0)
+
+        if args.ls_profiles:
+            path = os.path.expanduser("~/.config/pyfetch/profiles")
+            if not os.listdir(path):
+                print("The directory is empty.")
+            else:
+                print(os.listdir(path))
+                print("Disclaimer: The file extension (.ini) is not part of the profile name.")
             exit()
 
         # If no flags are running
