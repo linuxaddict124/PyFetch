@@ -1,8 +1,23 @@
 #!/bin/bash
 
-echo "Preparing to install pyfetch..."
-sleep 1
+echo "Preparing to install PyFetch..."
 
+# Detecting distros to give warnings or to fail installation for unsupported distros
+if grep -qi nixos /etc/os-release; then
+    echo "NixOS is not supported by PyFetch."
+    exit 1
+elif grep -qi void /etc/os-release; then
+    echo "WARNING: Some dependencies for PyFetch will be outdated on Void Linux. Continuing..."
+elif grep -qi gentoo /etc/os-release; then
+    echo "WARNING: PyFetch has never been tested on Gentoo Linux."
+elif grep -qi vanilla /etc/os-release; then
+    echo "Vanilla OS is a atomic immutable Linux distribution, which are not supported."
+    exit 1
+elif grep -qi android /etc/os-release; then
+    echo "Did you know that ANDROID CAN'T EVEN RUN PYFETCH?? This is a CLI command, not a GUI Android app."
+    exit 1
+fi
+sleep 1
 # Check if Python is installed
 if ! command -v python3 &> /dev/null; then
     echo "python3 is not installed. Please install it now. (If your on Linux, HOW DO YOU NOT HAVE PYTHON??)"
@@ -38,23 +53,23 @@ if [ "$EUID" -eq 0 ]; then
 fi
 
 # Start installation process
-read -p "Do you want to install pyfetch? (y/n): " choice
+read -p "Do you want to install PyFetch? (y/n): " choice
 
 case "$choice" in
   y|Y )
     echo "Installing dependencies..."
     if grep -qi arch /etc/os-release; then
-      sudo pacman -S --noconfirm python-pyfiglet python-packaging python-psutil
+      sudo pacman -S --noconfirm python-pyfiglet python-packaging python-psutil python-requests
     elif grep -qi void /etc/os-release; then
-      sudo xbps-install -Sy python3-setuptools python3-pyfiglet python3-packaging python3-psutil
+      sudo xbps-install -Sy python3-setuptools python3-pyfiglet python3-packaging python3-psutil python3-requests
     elif grep -qi fedora /etc/os-release; then
-      sudo dnf install -y python3-setuptools python3-pyfiglet python3-packaging python3-psutil
+      sudo dnf install -y python3-setuptools python3-pyfiglet python3-packaging python3-psutil python3-requests
     elif grep -qi ubuntu /etc/os-release; then
-      sudo apt-get install -y python3-setuptools python3-pyfiglet python3-packaging python3-psutil
+      sudo apt-get install -y python3-setuptools python3-pyfiglet python3-packaging python3-psutil python3-requests
     elif grep -qi zorin /etc/os-release; then
-      sudo apt-get install -y python3-setuptools python3-pyfiglet python3-packaging python3-psutil
+      sudo apt-get install -y python3-setuptools python3-pyfiglet python3-packaging python3-psutil python3-requests
     elif grep -qi debian /etc/os-release; then
-      sudo apt-get install -y python3-setuptools python3-pyfiglet python3-psutil
+      sudo apt-get install -y python3-setuptools python3-pyfiglet python3-psutil python3-requests
       echo "WARNING: Debian does not have the package python3-packaging in it's official repo. Checking for python pip..."
       sleep 1
       if ! command -v pip &> /dev/null; then
@@ -64,45 +79,38 @@ case "$choice" in
         pip install packaging
       fi
     elif grep -qi cachyos /etc/os-release; then
-      sudo pacman -S --noconfirm python-pyfiglet python-packaging python-psutil
+      sudo pacman -S --noconfirm python-pyfiglet python-packaging python-psutil python-requests
     else
       pip install pyfiglet
       pip install packaging
       pip install psutil
+      pip install requests
     fi
     sleep 1
-    echo "Installing pyfetch..."
+    echo "Installing Pyfetch..."
     if [ -f /usr/bin/pyfetch ]; then
       echo "pyfetch detected, reinstalling..."
       sudo rm /usr/bin/pyfetch
       rm -rf ~/.config/pyfetch
-      mkdir ~/.config/pyfetch
-      mkdir ~/.config/pyfetch/plugins
       sudo cp ./.files/pyfetch /usr/bin/pyfetch
-      cp ./.files/config/pyfetch.conf ~/.config/pyfetch/pyfetch.conf
-      cp ./.files/config/pluginloader.py ~/.config/pyfetch/pluginloader.py
-      cp ./.files/config/pluginguard.py ~/.config/pyfetch/pluginguard.py
+      cp -r ./.files/config/ ~/.config/pyfetch/
       sudo chmod +x /usr/bin/pyfetch
     else
       if [ -f ~/.config/pyfetch ]; then
         rm -rf ~/.config/pyfetch
-        mkdir ~/.config/pyfetch
-        mkdir ~/.config/pyfetch/plugins
-        cp ./.files/config/pyfetch.conf ~/.config/pyfetch/pyfetch.conf
-        cp ./.files/config/pluginloader.py ~/.config/pyfetch/pluginloader.py
-        cp ./.files/config/pluginguard.py ~/.config/pyfetch/pluginguard.py
+        cp -r ./.files/config/ ~/.config/pyfetch/
       else
-        mkdir ~/.config/pyfetch
-        mkdir ~/.config/pyfetch/plugins
-        cp ./.files/config/pyfetch.conf ~/.config/pyfetch/pyfetch.conf
-        cp ./.files/config/pluginloader.py ~/.config/pyfetch/pluginloader.py
-        cp ./.files/config/pluginguard.py ~/.config/pyfetch/pluginguard.py
+        cp -r ./.files/config/ ~/.config/pyfetch/
       fi
       sudo cp ./.files/pyfetch /usr/bin/pyfetch
       sudo chmod +x /usr/bin/pyfetch
     fi
+    if [ -f /usr/bin/pyfetch-beta ]; then
+        echo "pyfetch-beta detected, deleting file..."
+        sudo rm /usr/bin/pyfetch-beta
+    fi
 
-    echo "pyfetch is now installed."
+    echo "PyFetch is now installed."
 
     # Optional Files
     read -p "Do you want to download optional documents? (y/n): " optionalchoice
@@ -111,15 +119,17 @@ case "$choice" in
       y|Y )
         mkdir ~/Documents/pyfetch
         cp ./.files/optional/LICENSE ~/Documents/pyfetch/LICENSE
-        cp ./.files/optional/LICENSE ~/Documents/pyfetch/README.md
+        cp ./.files/optional/README.md ~/Documents/pyfetch/README.md
         echo "Completed. Go to ~/Documents/pyfetch to read them."
+        exit 0
       ;;
       n|N )
         echo "Exiting..."
-        sleep 1
+        exit 0
       ;;
       * )
         echo "Wrong input. Please type in y/n."
+        exit 1
       ;;
     esac
     ;;
