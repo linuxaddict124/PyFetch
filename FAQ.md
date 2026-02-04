@@ -41,3 +41,5 @@ Here you go!
 - Making plugins are not for the average joe
 ## Is this project about a minimal HTTPS CLI Library?
 No. I am pretty sure you are confused as that is part of Tyrowin's project which is indeed also called PyFetch.
+## What happened to PyFetch on AUR?
+PyFetch was about to get a config to expand configuration for users, but it seems impossible to add a config to the AUR package without putting in more effort, therfore, making the AUR package less similar to the main package. Also, PyFetch on the AUR **is official**. Both andresr and linuxaddict124 are the same person.
